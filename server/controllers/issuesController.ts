@@ -56,22 +56,33 @@ export const getIssueById = async (req: Request, res: Response) => {
 
 export const updateIssue = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const { description } = req.body;
-        const updateIssue = await p.query(
-            "UPDATE issues SET description = $1 WHERE todo_id = $2",
-            [description, id]
+        const { id } = req.params; // Get the issue ID from the URL parameter
+        const { title, description } = req.body; // Get title and description from request body
+
+       //Update the title and description of the issue corresponding to the ID in the database
+        const updatedIssue = await p.query(
+            "UPDATE issues SET title = $1, description = $2 WHERE todo_id = $3 RETURNING *",
+            [title, description, id]
         );
-        res.json("Issue is updated");
+
+        // If the issue corresponding to the ID is not found, a 404 error is returned.
+        if (updatedIssue.rows.length === 0) {
+            return res.status(404).json("Issue not found");
+        }
+
+        // Return updated issue data
+        res.json(updatedIssue.rows[0]);
     } catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
+            res.status(500).json("Server error");
         } else {
             console.error('An unknown error occurred');
+            res.status(500).json("An unknown error occurred");
         }
     }
-    
-};  
+};
+
 
 export const deleteIssue = async (req: Request, res: Response) => {
     try {
